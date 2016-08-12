@@ -13,8 +13,16 @@ var settings = module.exports = {
 settings.config = { 
   store: 'redis', 
   debug: true,
+  enabled: true,
+  keyStoreKey: 'simpleapicachekeys',
+  groupStoreKey: 'simpleapicachegroups',
   defaults: { 
     duration: settings.t.weeks, 
-    group: 'simple_cache_unclassified'
+    group: 'simple_cache_unclassified', 
+    getCacheKey: function(req,res,next) { 
+      if(req.simplecachebypass) return next(); 
+      req.simplecache.key = req.originalUrl || req.url;
+      next(); 
+    }
   }
 };
