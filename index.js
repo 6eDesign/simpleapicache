@@ -108,6 +108,7 @@ var getKeyData = function(obj) {
 var clearAllInGroup = function(groups) { 
   return function(group,cb) { 
     async.each(groups[group],(item,icb) => { 
+      console.log('clearing ' + item.url + ' from cache'); 
       config.redisClient.del(item.url,icb);
     },function(err){
       delete groups[group];
@@ -138,7 +139,7 @@ var purgeGroups = function(req,res,next) {
 }; 
 
 var purgeGroup = function(req,res,next) { 
-  async.each([req.group],clearAllInGroup(req.groups),function(err){
+  async.each([req.params.group],clearAllInGroup(req.groups),function(err){
     if(err) return next(err); 
     res.json(req.groups);
   });
