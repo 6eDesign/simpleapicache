@@ -24,7 +24,7 @@ var serveFromCache = function(req,res,next) {
       var respObj = JSON.parse(obj.responseObj);
       if(Date.now() <= respObj.exp) { 
         res.statusCode = respObj.status;
-        res.set(JSON.stringify(respObj.headers));
+        Object.keys(respObj.headers).forEach((key) => res.set(key,respObj.headers[key])); 
         helpers.log('Serving "' + sc.key + '" from redis cache.',respObj.group); 
         return res.send(respObj.json);
       }
@@ -38,7 +38,7 @@ var getHeaders = function(res) {
   _.each(['Cache-Control', 'Expires'], function(h) {
     var header = res.get(h);
     if (!_.isUndefined(header)) {
-      headers.headers[h] = header;
+      headers[h] = header;
     }
   });
   return headers;
@@ -108,7 +108,7 @@ var getKeyData = function(obj) {
 var clearAllInGroup = function(groups) { 
   return function(group,cb) { 
     async.each(groups[group],(item,icb) => { 
-      console.log('clearing ' + item.url + ' from cache'); 
+      helpers.log('clearing ' + item.url + ' from cache'); 
       config.redisClient.del(item.url,icb);
     },function(err){
       delete groups[group];
