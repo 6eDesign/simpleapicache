@@ -1,4 +1,6 @@
-var settings = module.exports = { 
+const url = require('url');
+
+let settings = module.exports = { 
   t: {
     seconds:      1000,
     minutes:      60000,
@@ -20,8 +22,12 @@ settings.config = {
     duration: settings.t.weeks, 
     group: 'simple_cache_unclassified', 
     getCacheKey: function(req,res,next) { 
-      if(req.simplecachebypass) return next(); 
-      req.simplecache.key = req.originalUrl || req.url;
+      if(req.simplecachebypass) return next();
+      let urlObj = url.parse(req.originalUrl || req.url,true); 
+      let qs = Object.keys(urlObj.query)
+              .sort().map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(urlObj.query[key])}`); 
+      req.simplecache.key = `${urlObj.pathname}${qs.length ? '?' : ''}${qs.join('&')}`;
+      console.log('setting cache key to: ' + req.simplecache.key); 
       next(); 
     }
   }
