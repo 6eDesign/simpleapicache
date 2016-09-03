@@ -25,9 +25,9 @@ settings.config = {
       if(req.simplecachebypass) return next();
       let urlObj = url.parse(req.originalUrl || req.url,true); 
       let qs = Object.keys(urlObj.query)
-              .sort().map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(urlObj.query[key])}`); 
+              .sort()
+              .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(urlObj.query[key])}`); 
       req.simplecache.key = `${urlObj.pathname}${qs.length ? '?' : ''}${qs.join('&')}`;
-      console.log('setting cache key to: ' + req.simplecache.key); 
       next(); 
     }
   }
