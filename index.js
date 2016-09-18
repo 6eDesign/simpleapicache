@@ -14,7 +14,6 @@ var checkForBypass = function(req,res,next) {
 var serveFromCache = function(req,res,next) {
   if(req.simplecachebypass) return next(); 
   var sc = req.simplecache;
-  // config.redisClient.del(sc.key);
   config.redisClient.hgetall(sc.key, function (err, obj) {
     if(err) {
       helpers.log('[redis-error]: ' + err);
@@ -26,6 +25,12 @@ var serveFromCache = function(req,res,next) {
         res.statusCode = respObj.status;
         Object.keys(respObj.headers).forEach((key) => res.set(key,respObj.headers[key])); 
         helpers.log('Serving "' + sc.key + '" from redis cache.',respObj.group); 
+        if(req.simplecache.opts.postware) {
+          req.data = respObj.json; 
+          return req.simplecache.opts.postware(req,res,(err) => {
+            res.send(req.data); 
+          });
+        }
         return res.send(respObj.json);
       }
     }
