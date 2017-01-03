@@ -127,7 +127,7 @@ var getGroups = function(req,res,next) {
     if(err) return next(err);
     if(!keys) { return res.json({groups: []}); }
     var obj = { };
-    async.each(keys,getKeyData(obj),function(err){
+    async.eachLimit(keys,1,getKeyData(obj),function(err){
       if(err) return next(err); 
       req.groups = obj; 
       next(); 
