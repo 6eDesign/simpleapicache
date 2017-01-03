@@ -65,7 +65,7 @@ var setupWatcher = function(req,res,next) {
   if(req.simplecachebypass) return next(); 
   res._ogJson = res.json;
   res.json = function(json) { 
-    saveToCache(req,res,json,getHeaders(res)); 
+    if((res.statusCode >= 200 && res.statusCode < 300) || res.statusCode === 304 ) saveToCache(req,res,json,getHeaders(res));
     res._ogJson(json);
   }; 
   next(); 
