@@ -40,7 +40,7 @@ var classifyRequest = function(req,res,next) {
 
 app.all('/api/:num', 
         classifyRequest,
-        config.cache.mw('1 day', {}), 
+        config.cache.mw('30 seconds', {}), 
         mockAPI);
 
 app.get('/cache/index', config.cache.getIndexesMW()); 

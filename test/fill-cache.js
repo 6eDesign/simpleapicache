@@ -10,7 +10,7 @@ var makeRequest = function(num,cb) {
 }; 
 
 var numItems = 35000; 
-var arr = new Array(numItems).fill(undefined).map((item,index) => index + 19350); 
+var arr = new Array(numItems).fill(undefined).map((item,index) => index); 
 
 async.eachLimit(arr,50,makeRequest,function(err){
   console.log('all done.', err); 

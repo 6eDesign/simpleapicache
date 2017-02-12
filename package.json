@@ -29,6 +29,7 @@
     "http": "0.0.0",
     "morgan": "^1.8.1",
     "redis": "^2.6.5",
+    "redis-notifier": "^1.0.0",
     "request": "^2.79.0"
   }
 }

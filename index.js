@@ -110,30 +110,14 @@ var getKeyData = function(obj) {
   };  
 }; 
 
-var deleteArrayFromHset = function(set,keys,cb) { 
-  var args = [ set ]; 
-  keys.forEach(function(key){
-    args.push(key); 
-  });
-  args.push(cb); 
-  config.redisClient.srem.apply(this,args); 
-}; 
-
 var clearAllInGroup = function(groups) { 
   return function(group,cb) { 
     helpers.log('Removing cache group: ' + group + ' and its ' + groups[group].length + ' items');
     var targets = groups[group].map(function(item) { return group + ':' + item.url});
     config.redisClient.del(targets,function(err,count){
       if(err) return cb(err); 
-      async.eachLimit(groups[group],10,function(item,icb){
-        var key = group.toString() + ':' + item.url; 
-        config.redisClient.srem(config.keyStoreKey,key,function(err){
-          icb(err);
-        });
-      },function(err){
-        delete groups[group];
-        cb(err);
-      });
+      delete groups[group];
+      config.redisClient.srem(config.keyStoreKey,targets,cb);
     }); 
   };
 }; 
@@ -156,7 +140,7 @@ var getGroups = function(req,res,next) {
 
 var purgeGroups = function(req,res,next) { 
   var groups = Object.keys(req.groups);
-  async.each(groups,clearAllInGroup(req.groups),function(err){
+  async.eachLimit(groups,2,clearAllInGroup(req.groups),function(err){
     if(err) return next(err);
     res.json(req.groups);
   });
@@ -180,3 +164,11 @@ app.purgeAllMW = function() {
 app.purgeGroupMW = function() { 
   return [ getGroups, purgeGroup ]; 
 };
+
+app.event = function(pattern,channelPattern,emittedKey) { 
+  if(pattern == '__keyevent@0__:expired') { 
+    config.redisClient.srem(config.keyStoreKey,emittedKey,function(err,numRemoved){
+      if(numRemoved) helpers.log('Removed "' + emittedKey + '" from simpleapicachekeys set. (Received expired event)'); 
+    });
+  }
+}; 

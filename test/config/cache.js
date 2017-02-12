@@ -1,10 +1,22 @@
 var redis = require('redis')
   , config = require('./index')
-  , simplecache = require('../../index');   
+  , simplecache = require('../../index')
+  , RedisNotifier = require('redis-notifier');   
 
 var client = redis.createClient({
   host: config.redisHost, 
   port: config.redisPort
+});
+
+var redisEvents = new RedisNotifier(redis, { 
+  redis: { host: config.redisHost, port: config.redisPort }, 
+  expired: true, 
+  evicted: true,
+  logLevel: 'DEBUG'
+});
+
+redisEvents.on('message',function(pattern,channelPattern,emittedKey){
+  simplecache.event.apply(this,arguments);
 });
 
 var debugOn = true; 
