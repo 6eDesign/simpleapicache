@@ -27,7 +27,7 @@ settings.config = {
       let qs = Object.keys(urlObj.query)
               .sort()
               .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(urlObj.query[key])}`); 
-      req.simplecache.key = `${urlObj.pathname}${qs.length ? '?' : ''}${qs.join('&')}`;
+      req.simplecache.key = `${req.simplecache.opts.group}:${urlObj.pathname}${qs.length ? '?' : ''}${qs.join('&')}`;
       next(); 
     }
   }

@@ -32,7 +32,7 @@ var serveFromCache = function(req,res,next) {
           });
         }
         return res.send(respObj.json);
-      }
+      } 
     }
     next(); 
   });
@@ -55,7 +55,7 @@ var saveToCache = function(req,res,json,headers) {
     headers,
     json, 
     status: res.statusCode, 
-    group: req.apicacheGroup || config.defaults.group, 
+    group: typeof req.apicacheGroup != 'undefined' ? req.apicacheGroup : config.defaults.group, 
     exp: Date.now() + sc.duration
   };
   helpers.saveToCache(obj,sc);
@@ -78,6 +78,7 @@ app.configure = function(conf) {
 app.mw = function(duration,opts){
   opts = typeof opts == 'undefined' ? config.defaults : _.merge({},config.defaults,opts);
   var storeState = (req,res,next) => { 
+    if(typeof req.apicacheGroup != 'undefined') opts.group = req.apicacheGroup; 
     req.simplecache = { 
       opts: opts, 
       duration: helpers.interpretCacheDuration(duration,opts)
@@ -100,9 +101,8 @@ var getKeyData = function(obj) {
       if(result) { 
         if(result && result.responseObj) {
           result.responseObj = JSON.parse(result.responseObj);
-          result.url = key;
           obj[result.responseObj.group] = obj[result.responseObj.group] || [ ]; 
-          obj[result.responseObj.group].push(result); 
+          obj[result.responseObj.group].push({url: key}); 
         }
       }
       cb();
@@ -110,28 +110,47 @@ var getKeyData = function(obj) {
   };  
 }; 
 
+var deleteArrayFromHset = function(set,keys,cb) { 
+  var args = [ set ]; 
+  keys.forEach(function(key){
+    args.push(key); 
+  });
+  args.push(cb); 
+  config.redisClient.srem.apply(this,args); 
+}; 
+
 var clearAllInGroup = function(groups) { 
   return function(group,cb) { 
-    async.each(groups[group],(item,icb) => { 
-      helpers.log('clearing ' + item.url + ' from cache'); 
-      config.redisClient.del(item.url,icb);
-    },function(err){
-      delete groups[group];
-      cb(err); 
-    });
+    helpers.log('Removing cache group: ' + group + ' and its ' + groups[group].length + ' items');
+    var targets = groups[group].map(function(item) { return group + ':' + item.url});
+    config.redisClient.del(targets,function(err,count){
+      if(err) return cb(err); 
+      async.eachLimit(groups[group],10,function(item,icb){
+        var key = group.toString() + ':' + item.url; 
+        config.redisClient.srem(config.keyStoreKey,key,function(err){
+          icb(err);
+        });
+      },function(err){
+        delete groups[group];
+        cb(err);
+      });
+    }); 
   };
 }; 
  
 var getGroups = function(req,res,next) { 
+  var start = Date.now(); 
   config.redisClient.smembers(config.keyStoreKey,function(err,keys){
     if(err) return next(err);
-    if(!keys) { return res.json({groups: []}); }
-    var obj = { };
-    async.eachLimit(keys,1,getKeyData(obj),function(err){
-      if(err) return next(err); 
-      req.groups = obj; 
-      next(); 
-    });
+    var obj = { }; 
+    for(var i=0; i < keys.length; ++i) { 
+      var group = keys[i].match(/[^:]*/i)[0]; 
+      var url = keys[i].replace(group + ':', ''); 
+      obj[group] = obj[group] || []; 
+      obj[group].push({url: url});
+    }
+    req.groups = obj; 
+    next();
   });
 }; 
 
