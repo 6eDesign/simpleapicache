@@ -1,25 +1,27 @@
 var redis = require('redis')
   , config = require('./index')
   , simplecache = require('../../index')
-  , RedisNotifier = require('redis-notifier');   
+  , cluster = require('cluster');   
 
 var client = redis.createClient({
   host: config.redisHost, 
   port: config.redisPort
 });
 
-var redisEvents = new RedisNotifier(redis, { 
-  redis: { host: config.redisHost, port: config.redisPort }, 
-  expired: true, 
-  evicted: true,
-  logLevel: 'DEBUG'
-});
+// if(cluster.isMaster) { 
+//   var RedisNotifier = require('redis-notifier')
+//   var redisEvents = new RedisNotifier(redis, { 
+//     redis: { host: config.redisHost, port: config.redisPort }, 
+//     expired: true, 
+//     evicted: true,
+//     logLevel: 'ERROR'
+//   });
+//   redisEvents.on('message',function(pattern,channelPattern,emittedKey){
+//     simplecache.event.apply(this,arguments);
+//   });
+// }
 
-redisEvents.on('message',function(pattern,channelPattern,emittedKey){
-  simplecache.event.apply(this,arguments);
-});
-
-var debugOn = true; 
+var debugOn = false; 
 
 var options = {
   debug: debugOn,                         // if true, enables console output 

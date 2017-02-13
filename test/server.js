@@ -2,18 +2,27 @@ const fs			  = 	 require('fs')
   , path 			  = 	 require('path')
   , http 			  =		 require('http')
   , express		  =		 require('express')
+  , cluster     =    require('cluster')
 	, morgan 		  = 	 require('morgan')
   , bodyParser  =    require('body-parser')
   , config      =    require('./config'); 
 
 const app = express();
 
+if(cluster.isMaster) { 
+  var cpuCount = require('os').cpus().length; 
+  for(var i=0; i < cpuCount; ++i) { 
+    cluster.fork(); 
+  }
+  return; 
+}
+
 // configure app: 
 app.set('port', config.port); 
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
-app.use(morgan('combined'));
+// app.use(morgan('combined'));
 
 var randomString = function(length) {  
   length = length || 50; 
@@ -23,7 +32,7 @@ var randomString = function(length) {
 var mockAPI = function(req,res,next) { 
   var start = Date.now(); 
   var numKeys = 10; 
-  var keySize = 3000; 
+  var keySize = 500; 
   var resp = { }; 
   while(Object.keys(resp).length <= numKeys) { 
     resp[randomString(20)] = randomString(keySize);     
@@ -40,7 +49,7 @@ var classifyRequest = function(req,res,next) {
 
 app.all('/api/:num', 
         classifyRequest,
-        config.cache.mw('30 seconds', {}), 
+        config.cache.mw('24 seconds', {}), 
         mockAPI);
 
 app.get('/cache/index', config.cache.getIndexesMW()); 
