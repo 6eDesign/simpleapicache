@@ -8,20 +8,20 @@ var client = redis.createClient({
   port: config.redisPort
 });
 
-// if(cluster.isMaster) { 
-//   var RedisNotifier = require('redis-notifier')
-//   var redisEvents = new RedisNotifier(redis, { 
-//     redis: { host: config.redisHost, port: config.redisPort }, 
-//     expired: true, 
-//     evicted: true,
-//     logLevel: 'ERROR'
-//   });
-//   redisEvents.on('message',function(pattern,channelPattern,emittedKey){
-//     simplecache.event.apply(this,arguments);
-//   });
-// }
+if(cluster.isMaster) { 
+  var RedisNotifier = require('redis-notifier')
+  var redisEvents = new RedisNotifier(redis, { 
+    redis: { host: config.redisHost, port: config.redisPort }, 
+    expired: true, 
+    evicted: true,
+    logLevel: 'INFO'
+  });
+  redisEvents.on('message',function(pattern,channelPattern,emittedKey){
+    simplecache.event.apply(this,arguments);
+  });
+}
 
-var debugOn = false; 
+var debugOn = true; 
 
 var options = {
   debug: debugOn,                         // if true, enables console output 
